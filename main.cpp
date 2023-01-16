@@ -1,14 +1,18 @@
+#include "rtweekend.h"
 #include "color.h"
-#include "vec3.h"
-#include "ray.h"
+#include "hittable_list.h"
+#include "sphere.h"
 
 #include <iostream>
 
-Color rayColor(const Ray &r) {
-    Vec3 unitDirection = unitVector(r.direction());
-    auto t = 0.5 * (unitDirection.y() + 1.0);
-
-    return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
+Color ray_color(const Ray& r, const hittable& world) {
+    hit_record rec;
+    if (world.hit(r, 0, infinity, rec)) {
+        return 0.5 * (rec.normal + Color(1,1,1));
+    }
+    Vec3 unit_direction = unitVector(r.direction());
+    auto t = 0.5*(unit_direction.y() + 1.0);
+    return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
 }
 
 int main() {
@@ -16,6 +20,11 @@ int main() {
     const auto aspectRatio = 16.0 / 9.0;
     const int imageWidth = 400;
     const int imageHeight = static_cast<int>(imageWidth / aspectRatio);
+
+    // World
+    hittable_list world;
+    world.add(make_shared<sphere>(Point3(0,0,-1), 0.5));
+    world.add(make_shared<sphere>(Point3(0,-100.5,-1), 100));
 
     // Camera
     auto viewportHeight = 2.0;
@@ -36,8 +45,8 @@ int main() {
             auto u = double(i) / (imageWidth - 1);
             auto v = double(j) / (imageHeight - 1);
             Ray r(origin, lowerLeftCorner + u * horizontal + v * vertical - origin);
-            Color pixelColor = rayColor(r);
-            writeColor(std::cout, pixelColor);
+            Color pixel_color = ray_color(r, world);
+            writeColor(std::cout, pixel_color);
         }
     }
 
